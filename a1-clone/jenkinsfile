@@ -1,0 +1,52 @@
+pipeline { agent any
+
+parameters {
+    string(name: 'BRANCH_NAME', defaultValue: 's8kiki', description: 'Branch to modify')
+}
+
+environment {
+    GIT_REPO = 'git@github.com:tchuinsu/a1-coubis.git'
+    CREDENTIALS_ID = 'github-auth'                    #    private key to Jenkins Credentials          ○ Private key: paste contents of ~/.ssh/id_rsa       ID  on jenkins: github-auth 
+}
+
+stages {
+    stage('Clone Repository') {
+        steps {
+            git branch: "${params.BRANCH_NAME}",
+                credentialsId: "${env.CREDENTIALS_ID}",
+                url: "${env.GIT_REPO}"
+        }
+    }
+
+    stage('Modify Files') {
+        steps {
+            script {
+                sh """
+                    echo '📝 Updating README.md...'
+                    echo 'Modified by Jenkins on: $(date)' >> README.md
+                """
+            }
+        }
+    }
+
+    stage('Commit and Push Changes') {
+        steps {
+            withCredentials([sshUserPrivateKey(credentialsId: "${env.CREDENTIALS_ID}", keyFileVariable: 'SSH_KEY')]) {
+                sh """
+                    echo '✅ Committing and pushing changes'
+
+                    git config user.name "Jenkins"
+                    git config user.email "coubis001@gmail.com"
+
+                    eval \$(ssh-agent -s)
+                    ssh-add "$SSH_KEY"
+
+                    git add -A
+
+                    git diff --cached --quiet || git commit -m "🔄 Auto-update by Jenkins"
+                    git push origin ${params.BRANCH_NAME}
+                """
+            }
+        }
+    }
+}
