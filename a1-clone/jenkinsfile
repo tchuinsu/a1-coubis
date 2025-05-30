@@ -35,20 +35,19 @@ pipeline {
         stage('Commit and Push Changes') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: "${env.CREDENTIALS_ID}", keyFileVariable: 'SSH_KEY')]) {
-                    sh '''
+                    sh """
                         echo "✅ Committing and pushing changes"
 
                         git config user.name "Jenkins"
                         git config user.email "coubis001@gmail.com"
 
-                        eval $(ssh-agent -s)
+                        eval \$(ssh-agent -s)
                         ssh-add "$SSH_KEY"
 
                         git add -A
-
                         git diff --cached --quiet || git commit -m "🔄 Auto-update by Jenkins"
-                        git push origin '${BRANCH_NAME}'
-                    '''
+                        git push origin ${params.BRANCH_NAME}
+                    """
                 }
             }
         }
