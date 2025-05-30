@@ -6,7 +6,7 @@ parameters {
 
 environment {
     GIT_REPO = 'git@github.com:tchuinsu/a1-coubis.git'
-    CREDENTIALS_ID = 'github-auth'                    #    private key to Jenkins Credentials          ○ Private key: paste contents of ~/.ssh/id_rsa       ID  on jenkins: github-auth 
+    CREDENTIALS_ID = 'github-auth'                         
 }
 
 stages {
