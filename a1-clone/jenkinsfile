@@ -38,7 +38,7 @@ pipeline {
                     sh """
                         echo "✅ Committing and pushing changes"
 
-                        git config user.name "Jenkins"
+                        git config user.name "tchuinsu"
                         git config user.email "coubis001@gmail.com"
 
                         eval \$(ssh-agent -s)
