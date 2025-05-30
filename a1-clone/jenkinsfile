@@ -1,51 +1,55 @@
-pipeline { agent any
+pipeline {
+    agent any
 
-parameters {
-    string(name: 'BRANCH_NAME', defaultValue: 's8kiki', description: 'Branch to modify')
-}
-
-environment {
-    GIT_REPO = 'git@github.com:tchuinsu/a1-coubis.git'
-    CREDENTIALS_ID = 'github-auth'                         
-}
-
-stages {
-    stage('Clone Repository') {
-        steps {
-            git branch: "${params.BRANCH_NAME}",
-                credentialsId: "${env.CREDENTIALS_ID}",
-                url: "${env.GIT_REPO}"
-        }
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to modify')
     }
 
-    stage('Modify Files') {
-        steps {
-            script {
-                sh """
-                    echo '📝 Updating README.md...'
-                    echo 'Modified by Jenkins on: $(date)' >> README.md
-                """
+    environment {
+        GIT_REPO = 'git@github.com:tchuinsu/a1-coubis.git'
+        CREDENTIALS_ID = 'github-auth'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                checkout([$class: 'GitSCM',
+                    branches: [[name: "*/${params.BRANCH_NAME}"]],
+                    userRemoteConfigs: [[
+                        url: "${env.GIT_REPO}",
+                        credentialsId: "${env.CREDENTIALS_ID}"
+                    ]]
+                ])
             }
         }
-    }
 
-    stage('Commit and Push Changes') {
-        steps {
-            withCredentials([sshUserPrivateKey(credentialsId: "${env.CREDENTIALS_ID}", keyFileVariable: 'SSH_KEY')]) {
-                sh """
-                    echo '✅ Committing and pushing changes'
+        stage('Modify Files') {
+            steps {
+                sh '''
+                    echo "📝 Updating README.md..."
+                    echo "Modified by Jenkins on: $(date)" >> README.md
+                '''
+            }
+        }
 
-                    git config user.name "Jenkins"
-                    git config user.email "coubis001@gmail.com"
+        stage('Commit and Push Changes') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: "${env.CREDENTIALS_ID}", keyFileVariable: 'SSH_KEY')]) {
+                    sh '''
+                        echo "✅ Committing and pushing changes"
 
-                    eval \$(ssh-agent -s)
-                    ssh-add "$SSH_KEY"
+                        git config user.name "Jenkins"
+                        git config user.email "coubis001@gmail.com"
 
-                    git add -A
+                        eval $(ssh-agent -s)
+                        ssh-add "$SSH_KEY"
 
-                    git diff --cached --quiet || git commit -m "🔄 Auto-update by Jenkins"
-                    git push origin ${params.BRANCH_NAME}
-                """
+                        git add -A
+
+                        git diff --cached --quiet || git commit -m "🔄 Auto-update by Jenkins"
+                        git push origin '${BRANCH_NAME}'
+                    '''
+                }
             }
         }
     }
