@@ -28,6 +28,7 @@ pipeline {
                 sh '''
                     echo "📝 Updating README.md..."
                     echo "Modified by Jenkins on: $(date)" >> README.md
+                    echo "ls"
                 '''
             }
         }
