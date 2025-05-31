@@ -1,0 +1,58 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to modify')
+    }
+
+    environment {
+        GIT_REPO = 'git@github.com:tchuinsu/a1-coubis.git'
+        CREDENTIALS_ID = 'github-auth'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                checkout([$class: 'GitSCM',
+                    branches: [[name: "*/${params.BRANCH_NAME}"]],
+                    userRemoteConfigs: [[
+                        url: "${env.GIT_REPO}",
+                        credentialsId: "${env.CREDENTIALS_ID}"
+                    ]]
+                ])
+            }
+        }
+
+        stage('Modify Files') {
+            steps {
+                sh '''
+                    echo "📝 Updating README.md..."
+                    echo "Modified by Jenkins on: $(date)" >> README.md
+                    echo "lss"
+                '''
+            }
+        }
+
+        stage('Commit and Push Changes') {
+    steps {
+        withCredentials([sshUserPrivateKey(credentialsId: "${env.CREDENTIALS_ID}", keyFileVariable: 'SSH_KEY')]) {
+            sh """
+                echo "✅ Committing and pushing changes"
+
+                git config user.name "Jenkins"
+                git config user.email "coubis001@gmail.com"
+
+                eval \$(ssh-agent -s)
+                ssh-add "$SSH_KEY"
+
+                git checkout -B ${params.BRANCH_NAME}
+
+                git add -A
+                git diff --cached --quiet || git commit -m "🔄 Auto-update by Jenkins"
+                git push origin ${params.BRANCH_NAME}
+            """
+        }
+    }
+}
+    }
+}
